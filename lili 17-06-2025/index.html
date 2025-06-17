@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Registro</title>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'spin': 'spin 1s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000000;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 1600 800'%3E%3Cg fill-opacity='0.49'%3E%3Cpolygon fill='%23222222' points='800 100 0 200 0 800 1600 800 1600 200'/%3E%3Cpolygon fill='%23444444' points='800 200 0 400 0 800 1600 800 1600 400'/%3E%3Cpolygon fill='%23666666' points='800 300 0 600 0 800 1600 800 1600 600'/%3E%3Cpolygon fill='%23888888' points='1600 800 800 400 0 800'/%3E%3Cpolygon fill='%23aaaaaa' points='1280 800 800 500 320 800'/%3E%3Cpolygon fill='%23cccccc' points='533.3 800 1066.7 800 800 600'/%3E%3Cpolygon fill='%23EEE' points='684.1 800 914.3 800 800 700'/%3E%3C/g%3E%3C/svg%3E");
+            background-attachment: fixed;
+            background-size: cover;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center items-center p-4">
+    <div class="w-full max-w-4xl space-y-8">
+        <!-- Formulario Principal -->
+        <div class="bg-white/95 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl">
+            <h1 class="text-4xl md:text-5xl font-light text-center text-gray-800 mb-8">Registro de Usuario</h1>
+            
+            <form id="userForm" class="space-y-6">
+                <!-- Campo de Imagen -->
+                <div class="space-y-2">
+                    <label for="userImage" class="block text-lg font-semibold text-gray-700">Imagen de Perfil</label>
+                    <div class="relative">
+                        <input type="file" id="userImage" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" required>
+                        <label for="userImage" class="block p-4 border-2 border-dashed border-blue-500 rounded-xl text-center text-blue-600 font-semibold cursor-pointer transition-all duration-300 hover:bg-blue-50 hover:border-blue-600 bg-blue-50/50">
+                            📷 Haz clic para seleccionar una imagen
+                        </label>
+                    </div>
+                    <div id="imagePreview" class="mt-4 text-center"></div>
+                </div>
+
+                <!-- Campo de Nombre -->
+                <div class="space-y-2">
+                    <label for="userName" class="block text-lg font-semibold text-gray-700">Nombre Completo</label>
+                    <input type="text" id="userName" class="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Ingresa tu nombre completo" required>
+                </div>
+
+                <!-- Campo de Edad -->
+                <div class="space-y-2">
+                    <label for="userAge" class="block text-lg font-semibold text-gray-700">Edad</label>
+                    <input type="number" id="userAge" class="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Ingresa tu edad" min="1" max="120" required>
+                </div>
+
+                <!-- Campo de Departamento -->
+                <div class="space-y-2">
+                    <label for="userDepartment" class="block text-lg font-semibold text-gray-700">Departamento</label>
+                    <select id="userDepartment" class="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" required>
+                        <option value="">Selecciona tu departamento</option>
+                    </select>
+                </div>
+
+                <!-- Botón de Envío -->
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xl font-semibold rounded-xl transition-all duration-300 hover:from-blue-600 hover:to-blue-700 hover:transform hover:-translate-y-1 hover:shadow-xl active:transform active:translate-y-0">
+                    Enviar Registro
+                </button>
+            </form>
+
+            <!-- Mensajes de Estado -->
+            <div id="successMessage" class="hidden mt-6 p-4 bg-green-100 text-green-800 rounded-xl text-center">
+                ✅ ¡Registro completado exitosamente!
+            </div>
+
+            <div id="errorMessage" class="hidden mt-6 p-4 bg-red-100 text-red-800 rounded-xl text-center">
+                ❌ Por favor, completa todos los campos correctamente.
+            </div>
+        </div>
+
+        <!-- Sección de Datos Registrados -->
+        <div class="bg-white/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-xl">
+            <h2 class="text-3xl font-semibold text-center text-gray-800 mb-6">Datos Registrados</h2>
+            <div id="userCards" class="space-y-4"></div>
+            
+            <div class="mt-6 flex flex-col sm:flex-row gap-4">
+                <button id="clearBtn" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-lg transition-all duration-300 hover:bg-red-600 hover:transform hover:-translate-y-1">
+                    Limpiar Datos
+                </button>
+                
+                <div class="flex flex-col sm:flex-row gap-4 flex-1">
+                    <button id="exportBtn" disabled class="flex-1 px-6 py-3 bg-green-500 text-white font-semibold rounded-lg transition-all duration-300 hover:bg-green-600 hover:transform hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">
+                        📊 Exportar a Excel
+                    </button>
+                    <button id="exportAllBtn" disabled class="flex-1 px-6 py-3 bg-green-500 text-white font-semibold rounded-lg transition-all duration-300 hover:bg-green-600 hover:transform hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">
+                        📋 Exportar Todos a Excel
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Indicador de Carga -->
+            <div id="loading" class="hidden mt-4 text-center text-gray-600">
+                <div class="inline-block w-5 h-5 border-3 border-gray-300 border-t-blue-500 rounded-full animate-spin mr-2"></div>
+                Procesando...
+            </div>
+        </div>
+
+        <!-- Sección de Archivos -->
+        <div class="bg-white/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-xl">
+            <h3 class="text-2xl font-semibold text-center text-gray-800 mb-6">📁 Archivos Excel Disponibles</h3>
+            <div id="fileItems" class="text-center text-gray-600 italic">
+                Los archivos se descargan directamente al navegador
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let userDataArray = [];
+        let departmentsData = [];
+        const COLOMBIA_API_URL = 'https://api-colombia.com/api/v1/Department';
+
+        // Cargar datos guardados del localStorage
+        function loadSavedData() {
+            const saved = localStorage.getItem('userDataArray');
+            if (saved) {
+                userDataArray = JSON.parse(saved);
+                userDataArray.forEach(user => displayUserData(user));
+                updateExportButtons();
+            }
+        }
+
+        // Guardar datos en localStorage
+        function saveData() {
+            localStorage.setItem('userDataArray', JSON.stringify(userDataArray));
+        }
+
+        // Cargar departamentos desde la API de Colombia
+        async function loadDepartments() {
+            try {
+                const response = await fetch(COLOMBIA_API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                departmentsData = await response.json();
+                populateDepartmentSelect();
+            } catch (error) {
+                console.error('Error al cargar departamentos:', error);
+                showMessage('error', 'Error al cargar los departamentos. Verifica tu conexión a internet.');
+            }
+        }
+
+        // Poblar el select de departamentos
+        function populateDepartmentSelect() {
+            const departmentSelect = document.getElementById('userDepartment');
+            
+            // Ordenar departamentos alfabéticamente
+            const sortedDepartments = departmentsData.sort((a, b) => a.name.localeCompare(b.name));
+            
+            sortedDepartments.forEach(department => {
+                const option = document.createElement('option');
+                option.value = department.id;
+                option.textContent = `${department.name} - ${department.cityCapital.name}`;
+                option.dataset.departmentInfo = JSON.stringify({
+                    id: department.id,
+                    name: department.name,
+                    capital: department.cityCapital.name,
+                    population: department.population,
+                    surface: department.surface,
+                    region: department.regionId
+                });
+                departmentSelect.appendChild(option);
+            });
+        }
+
+        // Previsualización de imagen
+        document.getElementById('userImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa" class="max-w-xs max-h-48 rounded-xl shadow-lg mx-auto">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
+            }
+        });
+
+        // Manejo del formulario
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const image = document.getElementById('userImage').files[0];
+            const name = document.getElementById('userName').value.trim();
+            const age = document.getElementById('userAge').value;
+            const departmentId = document.getElementById('userDepartment').value;
+            
+            // Validación
+            if (!image || !name || !age || !departmentId || age < 1 || age > 120) {
+                showMessage('error');
+                return;
+            }
+            
+            // Obtener información del departamento seleccionado
+            const departmentInfo = JSON.parse(document.getElementById('userDepartment').selectedOptions[0].dataset.departmentInfo);
+            
+            // Leer la imagen como base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const userData = {
+                    image: e.target.result,
+                    name: name,
+                    age: age,
+                    department: departmentInfo
+                };
+                
+                // Guardar en array global
+                userDataArray.push(userData);
+                
+                // Guardar en localStorage
+                saveData();
+                
+                // Guardar y mostrar los datos
+                displayUserData(userData);
+                
+                // Habilitar botones de exportación
+                updateExportButtons();
+                
+                // Simulación de envío exitoso
+                showMessage('success');
+                
+                // Limpiar formulario después de 2 segundos
+                setTimeout(() => {
+                    document.getElementById('userForm').reset();
+                    document.getElementById('imagePreview').innerHTML = '';
+                    hideMessages();
+                }, 2000);
+            };
+            reader.readAsDataURL(image);
+        });
+
+        // Mostrar datos registrados
+        function displayUserData(data) {
+            const userCards = document.getElementById('userCards');
+            
+            // Si es el primer dato, limpiar el mensaje de "no hay datos"
+            if (userCards.querySelector('.no-data')) {
+                userCards.innerHTML = '';
+            }
+            
+            const userCard = document.createElement('div');
+            userCard.className = 'bg-white rounded-xl p-6 shadow-lg flex flex-col md:flex-row items-center gap-6 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl';
+            userCard.innerHTML = `
+                <img src="${data.image}" alt="Imagen de perfil" class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-blue-500 shadow-lg">
+                <div class="flex-1 text-center md:text-left">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">${data.name}</h3>
+                    <p class="text-gray-600 text-lg mb-2">${data.age} años</p>
+                    <p class="text-blue-600 font-medium">📍 ${data.department.name} - ${data.department.capital}</p>
+                </div>
+            `;
+            userCards.appendChild(userCard);
+        }
+
+        // Limpiar datos registrados
+        function clearUserData() {
+            const userCards = document.getElementById('userCards');
+            userCards.innerHTML = '<div class="text-center text-gray-600 italic py-8">No hay datos registrados</div>';
+            userDataArray = [];
+            localStorage.removeItem('userDataArray');
+            updateExportButtons();
+        }
+
+        // Actualizar estado de botones de exportación
+        function updateExportButtons() {
+            const exportBtn = document.getElementById('exportBtn');
+            const exportAllBtn = document.getElementById('exportAllBtn');
+            
+            if (userDataArray.length > 0) {
+                exportBtn.disabled = false;
+                exportAllBtn.disabled = false;
+                exportBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                exportAllBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                exportBtn.classList.add('bg-green-500');
+                exportAllBtn.classList.add('bg-green-500');
+            } else {
+                exportBtn.disabled = true;
+                exportAllBtn.disabled = true;
+                exportBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                exportAllBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                exportBtn.classList.remove('bg-green-500');
+                exportAllBtn.classList.remove('bg-green-500');
+            }
+        }
+
+        // Función para mostrar/ocultar loading
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            loading.classList.toggle('hidden', !show);
+        }
+
+        // Exportar último usuario a Excel
+        function exportToExcel() {
+            if (userDataArray.length === 0) return;
+            
+            const lastUser = userDataArray[userDataArray.length - 1];
+            const excelContent = createExcelContent([lastUser]);
+            downloadExcel(excelContent, `usuario_${Date.now()}.xlsx`);
+            showMessage('success', 'Usuario exportado a Excel exitosamente');
+        }
+
+        // Exportar todos los usuarios a Excel
+        function exportAllToExcel() {
+            if (userDataArray.length === 0) return;
+            
+            const excelContent = createExcelContent(userDataArray);
+            downloadExcel(excelContent, `usuarios_todos_${Date.now()}.xlsx`);
+            showMessage('success', `${userDataArray.length} usuarios exportados a Excel exitosamente`);
+        }
+
+        // Crear contenido Excel
+        function createExcelContent(users) {
+            // Preparar datos para Excel
+            const excelData = users.map(user => ({
+                'Nombre': user.name,
+                'Edad': user.age,
+                'Departamento': user.department.name,
+                'Capital': user.department.capital,
+                'Población Departamento': user.department.population?.toLocaleString() || 'N/A',
+                'Superficie (km²)': user.department.surface?.toLocaleString() || 'N/A',
+                'Fecha de Registro': new Date().toLocaleString('es-ES'),
+                'Imagen': user.image.substring(0, 50) + '...'
+            }));
+
+            // Crear workbook y worksheet
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // Ajustar ancho de columnas
+            const columnWidths = [
+                { wch: 25 }, // Nombre
+                { wch: 10 }, // Edad
+                { wch: 20 }, // Departamento
+                { wch: 20 }, // Capital
+                { wch: 20 }, // Población
+                { wch: 15 }, // Superficie
+                { wch: 25 }, // Fecha
+                { wch: 50 }  // Imagen
+            ];
+            worksheet['!cols'] = columnWidths;
+
+            // Agregar worksheet al workbook
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+
+            return workbook;
+        }
+
+        // Descargar archivo Excel
+        function downloadExcel(workbook, filename) {
+            XLSX.writeFile(workbook, filename);
+        }
+
+        // Mostrar archivos disponibles (simulado)
+        function loadFiles() {
+            const fileItems = document.getElementById('fileItems');
+            fileItems.innerHTML = '<div class="text-center text-gray-600 italic py-4">Los archivos se descargan directamente al navegador</div>';
+        }
+
+        // Mostrar mensajes
+        function showMessage(type, customMessage = null) {
+            hideMessages();
+            
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (type === 'success') {
+                successMsg.textContent = customMessage || '✅ ¡Registro completado exitosamente!';
+                successMsg.classList.remove('hidden');
+            } else {
+                errorMsg.textContent = customMessage || '❌ Por favor, completa todos los campos correctamente.';
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function hideMessages() {
+            document.getElementById('successMessage').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        // Event listeners
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            clearUserData();
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            exportToExcel();
+        });
+
+        document.getElementById('exportAllBtn').addEventListener('click', function() {
+            exportAllToExcel();
+        });
+
+        // Inicialización
+        loadSavedData(); // Cargar datos guardados
+        loadFiles();
+        updateExportButtons();
+        loadDepartments(); // Cargar departamentos al iniciar
+    </script>
+</body>
+</html> 
